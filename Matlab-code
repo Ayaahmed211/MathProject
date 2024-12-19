@@ -1,0 +1,90 @@
+% Parameters
+N = 100;               % Number of spatial points
+M = 100000;            % Number of time steps
+deltaxi = 1 / N;       % Spatial step size
+deltatau = 0.01;       % Temporal step size
+tau = 0:deltatau:M * deltatau;  % Time vector
+xi = 0:deltaxi:1;      % Spatial vector
+xihalv = deltaxi / 2:deltaxi:1 - deltaxi / 2; % Midpoints of intervals
+
+% Initialize solution matrix
+my = zeros(M + 1, N - 1);      % Excludes boundaries
+my(1, round(N / 2)) = 1;       % Initial condition: Pulse at the center
+
+% Diffusion coefficients
+D = 0.00074 ./ (1 + exp(2.43 .* xi));           % At node points
+Dhalv = 0.00074 ./ (1 + exp(2.43 .* xihalv));   % At midpoints
+
+% Finite element matrices
+Dvec = D(2:N);                     % Interior nodes
+B = (deltaxi ^ 2) * diag(Dvec);    % Mass matrix (using ^ for power)
+
+% Compute diagonal and off-diagonal elements
+ACvec = -(Dhalv(2:N - 1)) .^ 2;      % Length N-2 (for super/sub-diagonal)
+Bvec = (Dhalv(2:N)) .^ 2 + (Dhalv(1:N - 1)) .^ 2; % Length N-1 (for main diagonal)
+
+% Assemble stiffness matrix
+A = diag(ACvec, -1) + diag(ACvec, 1) + diag(Bvec); % Stiffness matrix
+
+% Time-stepping matrix
+K = (B + deltatau * A) \ B;  % Time-stepping matrix
+
+% Time-stepping loop
+for l = 1:M
+    my(l + 1, :) = (K * my(l, :)')';  % Update solution at each step
+end
+
+% Boundary conditions and full solution matrix
+U = zeros(M + 1, N + 1);          % Includes boundaries
+U(:, 1) = 0;                      % Left boundary
+U(:, N + 1) = 0;                  % Right boundary
+U(1:M + 1, 2:N) = my;             % Fill interior nodes
+
+% Visualization
+
+% Figure 1: Temporal Evolution at a Fixed Location
+location_index = round(N / 2);  % Index corresponding to xi = 0.5
+figure(1);
+plot(tau, U(:, location_index), 'g');
+title('Membrane Potential Over Time at \xi = 0.5');
+xlabel('Time (\tau)');
+ylabel('Membrane Potential (U)');
+grid on;
+
+% Figure 2: Spatial Profile at Specific Time Steps
+time_steps = [501, 5001, 10001];  % Indices corresponding to times of interest
+figure(2);
+hold on;
+for t_idx = time_steps
+    plot(xi, U(t_idx, :), 'DisplayName', ['\tau = ' num2str(tau(t_idx))]);
+end
+hold off;
+title('Spatial Profile of Membrane Potential');
+xlabel('Spatial Domain (\xi)');
+ylabel('Membrane Potential (U)');
+legend show;
+grid on;
+
+% Figure 4: 3D Surface Plot of Membrane Potential
+figure(4);
+[X, T] = meshgrid(xi, tau);
+surf(X, T, U, 'EdgeColor', 'none');
+title('3D Surface Plot of Membrane Potential Over Space and Time');
+xlabel('Spatial Domain (\xi)');
+ylabel('Time (\tau)');
+zlabel('Membrane Potential (U)');
+colormap jet;
+colorbar;
+view(120, 30);  % Adjust view angle for better visualization
+
+% Figure 5: Animated Visualization
+fig5 = figure('Name', 'Animated Visualization', 'NumberTitle', 'off');
+for t_idx = 1:50:M  % Choose steps for smooth animation
+    figure(fig5);
+    plot(xi, U(t_idx, :), 'b');
+    title(['Membrane Potential at \tau = ', num2str(tau(t_idx))]);
+    xlabel('Spatial Domain (\xi)');
+    ylabel('Membrane Potential (U)');
+    grid on;
+    pause(0.05);  % Pause for a short duration to create the animation
+end
