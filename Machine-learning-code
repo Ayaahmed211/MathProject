@@ -1,0 +1,53 @@
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import tkinter as tk
+from tkinter import messagebox
+import serial
+
+# Load dataset
+data = pd.read_csv(r"C:\Users\3com\OneDrive\Desktop\python study\assests\mathproject\axon.csv")  # Update with your file path
+X = data[['current']]
+threshold = 80
+y = (data['current'] >= threshold).astype(int)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Connect to Arduino 
+arduino = serial.Serial(port='COM3', baudrate=9600, timeout=1)
+
+def test_signal(current):
+    prediction = model.predict([[current]])[0]
+    if prediction == 1:
+        arduino.write(b'1')  # Move servo
+        return "Movement Detected - Servo Activated"
+    else:
+        arduino.write(b'0')  # Stop servo
+        return "No Movement Detected - Servo Idle"
+
+def create_gui():
+    window = tk.Tk()
+    window.title("Prosthetic Movement Predictor")
+
+    tk.Label(window, text="Enter Current (nA):").grid(row=0, column=0)
+    current_entry = tk.Entry(window)
+    current_entry.grid(row=0, column=1)
+    result_label = tk.Label(window, text="")
+    result_label.grid(row=2, column=1)
+
+    def on_predict():
+        try:
+            current = float(current_entry.get())
+            result = test_signal(current)
+            result_label.config(text=result)
+            messagebox.showinfo("Prediction", result)
+        except ValueError:
+            messagebox.showerror("Error", "Enter a valid number!")
+
+    tk.Button(window, text="Predict", command=on_predict).grid(row=1, column=1)
+    window.mainloop()
+
+create_gui()
