@@ -46,9 +46,4 @@ The MATLAB component simulates the diffusion of signals in a spatial domain over
 ## Contributions
 This project represents a multidisciplinary effort, combining expertise in machine learning, hardware engineering, and computational simulations. The collaboration ensured the development of a robust system capable of accurately detecting and translating EMG signals into mechanical actions.
 
-## License
-This project is distributed under [specify license type], ensuring ethical use and contribution to the community.
-
-## Acknowledgments
-We extend our sincere gratitude to all contributors, mentors, and supporting organizations. This project benefited greatly from the resources and knowledge shared by open-source communities.
 
